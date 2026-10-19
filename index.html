@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panduan Lua API — Sylphie</title>
+<meta name="description" content="Cara menggunakan Lua API Sylphie: script, event, bot, world, inventory, packet, dan contoh siap pakai.">
+<style>
+  :root {
+    --bg: #0e0e11;
+    --bg-2: #141418;
+    --surface: #17171c;
+    --surface-2: #1d1d23;
+    --line: #2a2a32;
+    --line-2: #35353f;
+    --text: #d4d4da;
+    --text-dim: #9a9aa4;
+    --text-faint: #6f6f7a;
+    --accent: #d4d4da;
+    --accent-soft: #3a3a46;
+    --ok: #7fbf8f;
+    --warn: #d9b06a;
+    --err: #d98a8a;
+    --code-bg: #101014;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15.5px;
+    line-height: 1.68;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--text); text-decoration: none; border-bottom: 1px solid var(--line-2); }
+  a:hover { border-bottom-color: var(--text); }
+  code {
+    font-family: var(--mono);
+    font-size: 0.88em;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 0.1em 0.4em;
+    white-space: nowrap;
+  }
+  h1, h2, h3, h4 { line-height: 1.28; font-weight: 620; letter-spacing: -0.01em; }
+  h2 { font-size: 1.5rem; margin: 3rem 0 0.75rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+  h3 { font-size: 1.13rem; margin: 2rem 0 0.5rem; }
+  h4 { font-size: 0.98rem; margin: 1.5rem 0 0.4rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; }
+  p { margin: 0.7rem 0; }
+  ul, ol { margin: 0.7rem 0; padding-left: 1.35rem; }
+  li { margin: 0.3rem 0; }
+  hr { border: 0; border-top: 1px solid var(--line); margin: 2.5rem 0; }
+  strong { color: #e8e8ee; font-weight: 620; }
+
+  /* ---------- layout ---------- */
+  .shell { display: flex; align-items: flex-start; max-width: 1320px; margin: 0 auto; }
+  aside {
+    position: sticky; top: 0; align-self: flex-start;
+    width: 290px; flex: 0 0 290px;
+    height: 100vh; overflow-y: auto;
+    padding: 1.6rem 1.1rem 3rem 1.4rem;
+    border-right: 1px solid var(--line);
+    background: var(--bg-2);
+  }
+  .brand { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.25rem; }
+  .brand .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 12px rgba(212,212,218,0.45); }
+  .brand b { font-size: 1rem; letter-spacing: 0.01em; }
+  .brand-sub { color: var(--text-faint); font-size: 0.78rem; margin: 0 0 1.1rem; }
+  .filter {
+    width: 100%; background: var(--surface); color: var(--text);
+    border: 1px solid var(--line); border-radius: 7px;
+    padding: 0.45rem 0.6rem; font-family: var(--sans); font-size: 0.85rem;
+    margin-bottom: 1rem; outline: none;
+  }
+  .filter:focus { border-color: var(--line-2); }
+  nav a {
+    display: block; padding: 0.26rem 0.5rem; margin: 0.05rem 0;
+    color: var(--text-dim); border: 0; border-left: 2px solid transparent;
+    border-radius: 0 5px 5px 0; font-size: 0.875rem;
+  }
+  nav a:hover { color: var(--text); background: var(--surface); }
+  nav a.active { color: #f0f0f5; background: var(--surface); border-left-color: var(--accent); }
+  nav a.sub { padding-left: 1.35rem; font-size: 0.83rem; }
+  .nav-group { margin-top: 0.9rem; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-faint); padding-left: 0.5rem; }
+
+  main { flex: 1 1 auto; min-width: 0; padding: 2.4rem 2.6rem 6rem; }
+  .hero { margin-bottom: 1.5rem; }
+  .hero h1 { font-size: 2.05rem; margin: 0 0 0.4rem; }
+  .hero .lede { color: var(--text-dim); font-size: 1.02rem; max-width: 62ch; }
+  .pills { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 1.1rem; }
+  .pill {
+    font-size: 0.74rem; letter-spacing: 0.04em; text-transform: uppercase;
+    color: var(--text-dim); background: var(--surface);
+    border: 1px solid var(--line); border-radius: 999px; padding: 0.22rem 0.65rem;
+  }
+
+  /* ---------- code ---------- */
+  pre {
+    position: relative; background: var(--code-bg);
+    border: 1px solid var(--line); border-radius: 9px;
+    padding: 0.95rem 1rem; margin: 1rem 0;
+    overflow-x: auto; font-size: 0.845rem; line-height: 1.62;
+  }
+  pre code { background: none; border: 0; padding: 0; white-space: pre; font-size: 1em; }
+  .copy {
+    position: absolute; top: 0.5rem; right: 0.5rem;
+    background: var(--surface-2); color: var(--text-dim);
+    border: 1px solid var(--line-2); border-radius: 6px;
+    font-family: var(--sans); font-size: 0.7rem; letter-spacing: 0.04em;
+    padding: 0.2rem 0.5rem; cursor: pointer; opacity: 0; transition: opacity 0.12s;
+  }
+  pre:hover .copy { opacity: 1; }
+  .copy:hover { color: var(--text); }
+  .copy.done { color: var(--ok); border-color: var(--ok); }
+  .k { color: #c8a2e8; }   /* keyword */
+  .s { color: #a8cfa0; }   /* string  */
+  .c { color: #6f6f7a; font-style: italic; } /* comment */
+  .n { color: #d9b06a; }   /* number  */
+
+  /* ---------- tables ---------- */
+  .tw { overflow-x: auto; margin: 1rem 0; border: 1px solid var(--line); border-radius: 9px; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.87rem; }
+  th, td { text-align: left; padding: 0.55rem 0.8rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: var(--surface); color: var(--text-dim); font-weight: 600; font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr:hover { background: rgba(255,255,255,0.018); }
+  td code { white-space: nowrap; }
+
+  /* ---------- callouts ---------- */
+  .note {
+    border-left: 3px solid var(--accent-soft); background: var(--surface);
+    border-radius: 0 8px 8px 0; padding: 0.7rem 1rem; margin: 1.1rem 0;
+    color: var(--text-dim); font-size: 0.92rem;
+  }
+  .note b { color: var(--text); }
+  .note.warn { border-left-color: var(--warn); }
+  .note.ok { border-left-color: var(--ok); }
+
+  footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--line); color: var(--text-faint); font-size: 0.85rem; }
+  .mobile-bar { display: none; }
+
+  @media (max-width: 980px) {
+    .shell { display: block; }
+    aside { position: static; width: auto; height: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 1.2rem 1.1rem; }
+    nav { display: flex; flex-wrap: wrap; gap: 0.15rem; }
+    nav a { border-left: 0; border-radius: 6px; }
+    .nav-group { flex-basis: 100%; margin-top: 0.5rem; }
+    main { padding: 1.6rem 1.15rem 4rem; }
+    .hero h1 { font-size: 1.6rem; }
+  }
+  @media print {
+    aside, .copy { display: none; }
+    body { background: #fff; color: #111; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+<aside>
+  <div class="brand"><span class="dot"></span><b>Panduan Lua API</b></div>
+  <div class="brand-sub">Sylphie · Lua 5.4</div>
+  <input class="filter" id="filter" type="search" placeholder="Cari bagian…" autocomplete="off" aria-label="Cari bagian">
+  <nav id="nav">
+    <div class="nav-group">Dasar</div>
+    <a href="#pengantar">1. Pengantar</a>
+    <a href="#mulai" class="sub">Mulai cepat</a>
+    <a href="#scheduler" class="sub">Aturan eksekusi</a>
+    <a href="#event">4. Event</a>
+    <a href="#daftar-event" class="sub">Daftar event</a>
+    <div class="nav-group">Referensi</div>
+    <a href="#api">5. API</a>
+    <a href="#util" class="sub">Global utilitas</a>
+    <a href="#bot" class="sub">Bot</a>
+    <a href="#world" class="sub">World</a>
+    <a href="#player" class="sub">Player</a>
+    <a href="#inventory" class="sub">Inventory</a>
+    <a href="#packet" class="sub">Packet</a>
+    <a href="#kelas" class="sub">Kelas protokol</a>
+    <a href="#http-file" class="sub">HTTP &amp; file</a>
+    <div class="nav-group">Lanjutan</div>
+    <a href="#contoh">6. Contoh siap pakai</a>
+    <a href="#sandbox">7. Sandbox &amp; batas</a>
+    <a href="#noop">8. Yang sengaja no-op</a>
+    <a href="#error">9. Error</a>
+    <a href="#config">10. Config keys</a>
+    <a href="#tips">11. Tips &amp; jebakan</a>
+    <div class="nav-group">Tautan</div>
+    <a href="scripting.md">scripting.md (Markdown)</a>
+    <a href="https://github.com/arvcx/Sylphielette">Repositori di GitHub</a>
+  </nav>
+</aside>
+
+<main>
+
+<header class="hero">
+  <h1>Panduan Lua API — Sylphie</h1>
+  <p class="lede">Cara memakai Lua API Sylphie dari nol: di mana script disimpan, cara menjalankannya,
+  aturan eksekusi, daftar event, referensi lengkap API (bot, world, player, inventory, packet),
+  contoh yang bisa langsung dipakai, dan daftar hal yang <em>sengaja</em> tidak benar-benar bekerja
+  supaya kamu tidak membuang waktu mendebugnya.</p>
+  <div class="pills">
+    <span class="pill">Lua 5.4</span>
+    <span class="pill">1 state / script</span>
+    <span class="pill">Cooperative</span>
+    <span class="pill">Sandboxed</span>
+  </div>
+</header>
+
+<h2 id="pengantar">1. Apa itu scripting di Sylphie</h2>
+<p>Sylphie menanam <strong>Lua 5.4</strong> di dalam aplikasi. Setiap script mendapat:</p>
+<ul>
+  <li><code>lua_State</code> sendiri — dua script tidak bisa saling merusak global,</li>
+  <li>satu coroutine kooperatif sendiri,</li>
+  <li>salinan API sendiri.</li>
+</ul>
+<p>Artinya: satu script bisa crash atau loop tanpa membekukan UI, dan script lain tetap jalan.
+Script tidak punya thread OS — semuanya berbagi frame loop aplikasi.</p>
+
+<h2 id="mulai">2. Mulai cepat</h2>
+
+<h3 id="lokasi">2.1 Di mana script disimpan</h3>
+<pre><code>&lt;folder exe&gt;/scripts</code></pre>
+<p>Folder ini dibuat otomatis saat aplikasi start, dan letaknya <strong>di samping <code>Sylphie.exe</code></strong>,
+bukan di <code>%LOCALAPPDATA%</code>. Jadi kalau kamu punya folder portable
+(<code>Sylphie.exe</code> + <code>items.dat</code> + <code>scripts/</code> + <code>config.json</code>),
+cukup drop file <code>.lua</code> ke <code>scripts/</code>.</p>
+<div class="note">Folder lama <code>%LOCALAPPDATA%\Sylphie\scripts</code> <b>tidak dipindahkan otomatis</b> — pindahkan sendiri.</div>
+
+<h3 id="menjalankan">2.2 Cara menjalankan</h3>
+<p>Command line sudah dihapus (tidak ada <code>--headless</code> / <code>--exec</code>). Jalankan GUI,
+lalu pakai <strong>halaman Scripts</strong> atau ketik di halaman <strong>Console</strong>:</p>
+<pre><code>script list
+script run &lt;nama&gt;
+script stop &lt;nama&gt;
+script reload &lt;nama&gt;</code></pre>
+<p>Sebuah script <strong>berhenti sendiri saat selesai</strong>: begitu body-nya selesai dan tidak ada lagi
+<code>sleep()</code> yang menggantung, tidak ada <code>listen()</code> / handler <code>onXxx</code>, dan
+tidak ada timer <code>after()</code>/<code>every()</code> yang hidup, tombol kembali ke <em>Run</em>.
+Script yang isinya <code>while true do ... end</code> tetap <code>running</code> sampai kamu tekan Stop.</p>
+
+<h3 id="pertama">2.3 Script pertama</h3>
+<p>Simpan sebagai <code>scripts/hello.lua</code>, lalu <strong>Run</strong>:</p>
+<pre><code class="lua">local bot = getBot()              -- tanpa argumen: bot yang dipasangkan ke script ini
+if not bot then
+    log("error", "script ini tidak punya bot")
+    return
+end
+
+log("info", "bot " .. bot.name .. " status: " .. bot.status)
+
+bot:say("halo dari script!")</code></pre>
+
+<h3 id="konvensi">2.4 Konvensi yang perlu dihafal</h3>
+<p><strong>Hampir semua method bot mengembalikan <code>(ok, error)</code>.</strong> Periksa hasilnya:</p>
+<pre><code class="lua">local ok, err = bot:say("halo")
+if not ok then
+    log("warn", "gagal kirim chat: " .. tostring(err))
+end</code></pre>
+<p><code>ok</code> = boolean, <code>err</code> = string kosong saat sukses dan pesan error
+(mis. <code>BOT_ACTION_RATE_LIMITED</code>) saat gagal.</p>
+<div class="note ok"><b>Pacing itu fitur, bukan gangguan.</b> Mesin membatasi sendiri tiap aksi
+(gerak, tile, chat, inventory, warp). Itu yang membuat bot tidak dianggap spam oleh server.
+Karena itu <b>jangan hapus <code>sleep()</code></b> di loop — script yang mencoba bergerak secepat mungkin
+tidak menambah apa pun selain tekanan rate limit di sisi server.</div>
+
+<h2 id="scheduler">3. Aturan eksekusi (scheduler)</h2>
+<ul>
+  <li>Body script adalah <strong>coroutine</strong> yang di-resume per potong.
+      <code>while true do ... end</code> akan <em>yield</em>, tidak nge-hang.</li>
+  <li><code>sleep(ms)</code> hanya bekerja <strong>di body script</strong>. Di dalam <code>listen()</code>
+      callback atau handler global tidak ada coroutine untuk di-yield, jadi delay <strong>dilewati</strong>
+      dan sebuah warning dicatat. Jangan sleep di callback.</li>
+  <li>Setiap resume menjalankan paling banyak <code>scripts.instruction_budget</code> instruksi Lua
+      (default <code>2000000</code>; <code>0</code> mematikan hook), supaya loop ketat tidak membuat
+      UI/network kelaparan. Script yang terus melewati budget dilaporkan <code>LUA_TIMEOUT</code>.</li>
+  <li><code>after()</code> / <code>every()</code> ditembakkan dari frame loop yang sama — bukan thread kedua.</li>
+  <li>Kalau body script <code>return</code>, script selesai — kecuali masih ada handler/timer hidup,
+      yang membuatnya tetap <code>running</code>.</li>
+</ul>
+
+<h2 id="event">4. Event</h2>
+<p>Ada <strong>dua cara</strong> menerima event, dan keduanya memberi payload yang sama:</p>
+<ol>
+  <li><strong>Handler global</strong> dengan nama referensi — <code>function onChat(player, message)</code>.
+      Tidak perlu registrasi apa pun. Ini cara script gaya GTBot-JS ditulis.</li>
+  <li><strong><code>listen(name, fn)</code></strong> — spelling milik Sylphie.</li>
+</ol>
+<pre><code class="lua">listen("chat", function(event)
+    log("info", event.name .. ": " .. event.text)
+end)
+
+-- Event yang sama sebagai handler global:
+function onChat(player, message)
+    log("info", player.name .. ": " .. message)
+end</code></pre>
+<p><code>listen(name, fn)</code> tidak mengembalikan apa pun. <code>listeners()</code> mengembalikan
+tabel nama-event → <strong>jumlah</strong> listener (bukan handle). Batalkan per nama:</p>
+<pre><code class="lua">unlisten("chat")   -- buang listener untuk satu event
+unlisten()         -- buang semua listener script ini</code></pre>
+<p>Nama alternatif yang juga diterima: <code>addEvent</code>, <code>removeEvent</code>,
+<code>removeEvents</code>, <code>listenEvents</code>, <code>unlistenEvents</code>.</p>
+
+<h3 id="daftar-event">4.1 Daftar event</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Event</th><th>Alias</th><th>Handler global</th><th>Payload</th></tr></thead>
+<tbody>
+<tr><td><code>packet</code></td><td><code>onPacket</code></td><td><code>onPacket</code></td><td><code>direction</code>, <code>net_id</code>, <code>type_name</code>, <code>size</code>, <code>summary</code></td></tr>
+<tr><td><code>world_enter</code></td><td><code>onWorldJoin</code>, <code>world_join</code></td><td><code>onWorldJoin</code></td><td><code>name</code>, <code>width</code>, <code>height</code> (width/height hanya saat enter)</td></tr>
+<tr><td><code>world_leave</code></td><td><code>onWorldLeave</code></td><td><code>onWorldLeave</code></td><td><code>name</code></td></tr>
+<tr><td><code>bot_connect</code></td><td><code>onConnect</code>, <code>connect</code></td><td><code>onConnect</code></td><td><code>bot</code>, <code>server</code></td></tr>
+<tr><td><code>bot_disconnect</code></td><td><code>onDisconnect</code>, <code>disconnect</code></td><td><code>onDisconnect</code></td><td><code>bot</code>, <code>reason</code> (token mesin, mis. <code>ServerClosed</code>), <code>detail</code> (bisa tidak ada)</td></tr>
+<tr><td><code>console</code></td><td><code>onConsole</code></td><td><code>onConsole</code></td><td><code>severity</code>, <code>message</code></td></tr>
+<tr><td><code>player_join</code></td><td><code>onPlayerJoin</code></td><td><code>onPlayerJoin</code></td><td><code>name</code>, <code>netId</code>, <code>x</code>, <code>y</code></td></tr>
+<tr><td><code>player_leave</code></td><td><code>onPlayerLeave</code></td><td><code>onPlayerLeave</code></td><td><code>name</code>, <code>netId</code></td></tr>
+<tr><td><code>chat</code></td><td><code>onChat</code>, <code>game_message</code></td><td><code>onChat(player, message)</code></td><td><code>name</code>, <code>text</code>; teks juga jadi argumen kedua</td></tr>
+<tr><td><code>tile_change</code></td><td><code>onTileChange</code></td><td><code>onTileChange</code></td><td><code>x</code>, <code>y</code>, <code>foreground</code>, <code>background</code></td></tr>
+<tr><td><code>tick</code></td><td>—</td><td><em>tidak ada</em></td><td><code>now</code> (uptime ms)</td></tr>
+</tbody>
+</table>
+</div>
+<ul>
+  <li>Semua nilai payload adalah <strong>string</strong>, termasuk angka. Nama event juga ada di tabel
+      sebagai field <code>type</code>.</li>
+  <li>Handler berjalan di thread yang mem-publish event, diserialisasi terhadap scheduler script oleh lock.
+      Dipanggil lewat <code>pcall</code>: callback <code>listen()</code> yang throw dilaporkan lalu
+      <strong>dimatikan</strong>; handler global yang throw dilaporkan tapi dibiarkan (karena script yang
+      mendefinisikannya).</li>
+  <li><code>onLogin</code> <strong>bukan</strong> event. Tidak ada event terautentikasi untuk menembakkannya,
+      jadi <code>listen("onLogin")</code> ditolak, bukan berlangganan ke sesuatu yang tak pernah jalan.</li>
+  <li><code>tick</code> hanya lewat <code>listen()</code>; per-frame callback harus murah untuk layak.</li>
+</ul>
+
+<hr>
+
+<h2 id="api">5. Referensi API</h2>
+
+<h3 id="util">5.1 Global utilitas</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Fungsi</th><th>Hasil</th></tr></thead>
+<tbody>
+<tr><td><code>log(level, message)</code></td><td>Log pada level eksplisit (<code>info</code>, <code>warn</code>, <code>error</code>, …) + publish ke console</td></tr>
+<tr><td><code>print(...)</code></td><td>Argumen digabung tab, di-log pada level <code>info</code></td></tr>
+<tr><td><code>sleep(ms)</code></td><td>Yield body script; di tempat lain diabaikan + warning</td></tr>
+<tr><td><code>sylphieVersion()</code></td><td>String versi Sylphie yang berjalan</td></tr>
+<tr><td><code>now()</code></td><td>Jam monotonik <strong>milidetik</strong> (bukan Unix seconds)</td></tr>
+<tr><td><code>getBotId()</code></td><td>Id bot script ini, atau <code>0</code></td></tr>
+<tr><td><code>addBot{ name=, ltoken=|token=|secret= }</code></td><td>Buat bot dari ltoken. Kembalikan objek bot, atau <code>nil, error</code></td></tr>
+<tr><td><code>removeColor(text)</code></td><td>Buang kode warna Growtopia</td></tr>
+<tr><td><code>runThread(fn, ...)</code></td><td>Memanggil <code>fn(...)</code> inline (tidak ada thread kedua)</td></tr>
+<tr><td><code>getProxyManager()</code></td><td><code>{ mode = "socks5"|"none", label = &lt;jalur koneksi nyata&gt; }</code></td></tr>
+<tr><td><code>after(ms, fn)</code> / <code>every(ms, fn)</code></td><td>Timer sekali / berulang. Kembalikan handle</td></tr>
+<tr><td><code>stopTimer(handle)</code></td><td>Batalkan timer</td></tr>
+<tr><td><code>clearConsole()</code></td><td>Kosongkan ring log bot yang terikat</td></tr>
+</tbody>
+</table>
+</div>
+<p>Contoh <code>addBot</code> (importer token):</p>
+<pre><code class="lua">local bot = addBot({ name = "worker1", secret = "token|mac|rid" })
+if bot then bot:connect() end</code></pre>
+<p><code>addBot</code> menerima ltoken dengan tiga ejaan — <code>ltoken</code>, <code>token</code>, atau
+<code>secret</code> — karena daftar token yang beredar memakai ketiganya untuk field yang sama.
+<code>details.token</code> boleh berupa satu baris token penuh bergaya SylphieJS/Tempo
+(<code>public_key|token|mac|rid|hash|platform</code>), dan segmen <code>@name</code> di depan dilewati.
+<code>name</code> dipakai sebagai kunci penyimpanan token; kalau kosong, segmen token sendiri yang dipakai.</p>
+<div class="note">Bot <b>langsung masuk ke fleet</b> (muncul di halaman Bots dan tersimpan saat keluar),
+tapi <b>belum login</b>. Panggil <code>bot:connect()</code> untuk membelanjakan satu login.</div>
+<h4>Enum</h4>
+<p>Tabel enum adalah <code>nama → string</code>, jadi <code>Platform.macos == "macos"</code> bernilai true:
+<code>Platform</code>, <code>BotStatus</code>, <code>Proxy</code>, <code>VariantType</code>, <code>Event</code>.</p>
+
+<h3 id="bot">5.2 Bot</h3>
+<pre><code class="lua">local bot = getBot()          -- bot milik script ini
+local bot = getBot("worker1") -- atau berdasarkan nama/id
+local all = getBots()         -- semua bot yang dimiliki manager</code></pre>
+<p>Objek bot menjawab method (<code>bot:say(...)</code>) <strong>dan</strong> property (<code>bot.name</code>).
+Nama di-resolve sebagai method dulu, lalu sebagai field hidup. Script juga boleh menaruh field sendiri
+di objek bot (disimpan di side table, tidak error).</p>
+<p><strong>Property:</strong> <code>name</code>, <code>growid</code>/<code>username</code>, <code>status</code>,
+<code>world</code>, <code>netid</code>/<code>netId</code>, <code>x</code>, <code>y</code>, <code>ping</code>,
+<code>gem_count</code>, <code>auto_collect</code>, <code>collect_range</code>, dan <code>level</code>
+(selalu <code>nil</code> — tidak dilacak).</p>
+<p><strong>Method:</strong> <code>connect</code>, <code>disconnect</code>, <code>move</code>,
+<code>moveTile</code>, <code>moveTo</code>, <code>moveLeft</code>/<code>moveRight</code>/<code>moveUp</code>/<code>moveDown</code>,
+<code>isInWorld</code>, <code>walkTo</code>, <code>punch</code>, <code>hit</code>, <code>wrench</code>,
+<code>wrenchPlayer</code>, <code>place</code>, <code>drop</code>, <code>fastDrop</code>, <code>trash</code>,
+<code>fastTrash</code>, <code>wear</code>, <code>use</code>, <code>unwear</code>, <code>buy</code>,
+<code>activate</code>, <code>active</code>, <code>enter</code>, <code>retrieve</code>, <code>respawn</code>,
+<code>setDirection</code>, <code>face</code>, <code>isInTile</code>, <code>getPath</code>,
+<code>findPath</code>, <code>findWorldPath</code>, <code>getWorld</code>, <code>getInventory</code>,
+<code>getLog</code>, <code>getConsole</code>, <code>getLogin</code>, <code>getProxy</code>,
+<code>getPlaytime</code>, <code>getAge</code>, <code>getActiveTime</code>, <code>getSignal</code>,
+<code>getCaptcha</code>, <code>setSkin</code>, <code>setCountry</code>, <code>setMac</code>,
+<code>setRid</code>, <code>updateBot</code>, <code>runScript</code>, <code>stopScript</code>,
+<code>getPing</code>, <code>isWearing</code>, <code>collectObject</code>, <code>collect</code>,
+<code>clearConsole</code>, <code>sendPacket</code>, <code>sendPacketText</code>, <code>sendRaw</code>,
+<code>say</code>, <code>join</code>, <code>warp</code>, <code>leaveWorld</code>, <code>state</code>,
+<code>x</code>, <code>y</code>, <code>name</code>, <code>ping</code>, <code>getX</code>, <code>getY</code>.</p>
+<div class="tw">
+<table>
+<thead><tr><th>Panggilan</th><th>Arti</th></tr></thead>
+<tbody>
+<tr><td><code>bot:connect()</code> / <code>bot:disconnect()</code></td><td>Mulai / hentikan sesi (login lewat login gate)</td></tr>
+<tr><td><code>bot:say(text)</code></td><td>Kirim chat (kena pacer Chat)</td></tr>
+<tr><td><code>bot:join(nama)</code></td><td>Warp ke world — lewat <code>warp</code>, jadi dapat cek state + Warp pacer</td></tr>
+<tr><td><code>bot:warp(nama [, remember])</code></td><td>Sama, dengan flag mengingat world untuk reconnect</td></tr>
+<tr><td><code>bot:leaveWorld()</code></td><td>Keluar dari world sekarang</td></tr>
+<tr><td><code>bot:punch(x, y)</code> / <code>bot:hit(x, y)</code></td><td>Pukul tile</td></tr>
+<tr><td><code>bot:place(x, y, itemId)</code></td><td>Taruh item di tile</td></tr>
+<tr><td><code>bot:drop(itemId)</code> / <code>bot:fastDrop(id)</code></td><td>Buang item dari tas</td></tr>
+<tr><td><code>bot:collectObject(uid)</code> / <code>bot:collect(uid)</code></td><td>Ambil item jatuh berdasarkan uid</td></tr>
+<tr><td><code>bot:walkTo(x, y [, avoidItemId])</code></td><td>Pathfinding A* ke tile</td></tr>
+<tr><td><code>bot:moveTile(x, y)</code></td><td>Jalan lewat path bergaya Mori (sama dengan klik peta)</td></tr>
+<tr><td><code>bot:move(x, y)</code></td><td>Bergerak menuju tile absolut</td></tr>
+<tr><td><code>bot:moveTo(dx, dy)</code></td><td>Melangkah sebesar offset dari posisi sekarang</td></tr>
+<tr><td><code>bot:moveLeft(n)</code> … <code>moveDown(n)</code></td><td>Langkah 1 tile (atau <code>n</code>) ke arah itu</td></tr>
+<tr><td><code>bot:getPath(x, y)</code> / <code>bot:findPath(x, y)</code></td><td>Array langkah, atau <code>nil</code></td></tr>
+<tr><td><code>bot:isInWorld([nama])</code></td><td>Boolean</td></tr>
+<tr><td><code>bot:isInTile(x, y)</code></td><td>Boolean</td></tr>
+<tr><td><code>bot:sendPacket([type,] text)</code></td><td>Kirim frame teks mentah</td></tr>
+<tr><td><code>bot:sendRaw(packetTable)</code></td><td>Kirim GameUpdatePacket dari tabel Lua</td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>Nama Lucifer/SylphieJS adalah alias, bukan implementasi kedua:</strong> <code>hit</code> =
+<code>punch</code>, <code>use</code> = <code>wear</code>, <code>active</code> = <code>activate</code>,
+<code>face</code> = <code>setDirection</code>, <code>findPath</code> = <code>getPath</code>,
+<code>collect</code> = <code>collectObject</code>.</p>
+
+<h3 id="world">5.3 World</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Fungsi</th><th>Hasil</th></tr></thead>
+<tbody>
+<tr><td><code>getWorld()</code></td><td>World bot yang terikat, atau <code>nil</code></td></tr>
+<tr><td><code>getTile(x, y)</code></td><td>Tabel tile, atau <code>nil</code></td></tr>
+<tr><td><code>getTiles()</code> / <code>getTilesSafe()</code></td><td>Array semua tile yang termuat</td></tr>
+<tr><td><code>getObjects()</code> / <code>getObject(uid)</code></td><td>Item jatuh</td></tr>
+<tr><td><code>getPlayers()</code></td><td>Pemain di world</td></tr>
+<tr><td><code>getNPCs()</code> / <code>getNPC(id)</code></td><td>NPC</td></tr>
+<tr><td><code>isWalkable(x, y)</code></td><td>Boolean</td></tr>
+<tr><td><code>findItem(nama)</code></td><td>Id item, atau <code>nil</code></td></tr>
+<tr><td><code>findPath(sx, sy, tx, ty)</code></td><td>Array langkah, atau <code>nil</code></td></tr>
+</tbody>
+</table>
+</div>
+<p>Objek world — field: <code>name</code>, <code>x</code>/<code>width</code>, <code>y</code>/<code>height</code>,
+<code>tile_count</code>, <code>version</code>, <code>objects</code>, <code>players</code>, <code>npcs</code>,
+<code>tiles</code>, <code>public</code>.<br>
+Method: <code>getTile</code>, <code>getTiles</code>, <code>getTilesSafe</code>, <code>getObject</code>,
+<code>getObjects</code>, <code>getPlayer(key)</code>, <code>getPlayers</code>, <code>getNPC(key)</code>,
+<code>getNPCs</code>, <code>getLocal</code>, <code>getTileParent</code>, <code>isValidPosition</code>,
+<code>hasAccess</code>, <code>hasAdventure</code>, <code>getAdventures</code>, plus alias
+<code>.name()</code>, <code>.width()</code>, <code>.height()</code>, <code>.version()</code>,
+<code>.tileCount()</code>.</p>
+<p><strong>Field tile:</strong> <code>fg</code>/<code>foreground</code>, <code>bg</code>/<code>background</code>,
+<code>flags</code>, <code>parent</code> (sebuah <em>index</em> tile, bukan id item), <code>object</code>
+(jenis extra-data), <code>foreground_name</code>.</p>
+<p><strong>Method tile:</strong> <code>hasExtra()</code>, <code>getExtra()</code>
+(<code>{ kind = n }</code> atau <code>nil</code>), <code>canHarvest()</code> (true bila extra-data-nya data
+seed), <code>hasFlag(flag)</code>, <code>getParent()</code> (index mentah).</p>
+<p><strong>Field item jatuh:</strong> <code>id</code>, <code>count</code>, <code>flags</code>,
+<code>oid</code> (uid), <code>x</code>, <code>y</code> — dalam <strong>pixel world</strong>, bukan tile.</p>
+<p><strong>Field NPC:</strong> <code>type</code>, <code>id</code>, <code>x</code>, <code>y</code>,
+<code>destx</code>, <code>desty</code>, <code>var</code>, <code>unk</code>.</p>
+
+<h3 id="player">5.4 Player</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Fungsi</th><th>Hasil</th></tr></thead>
+<tbody>
+<tr><td><code>getLocal()</code></td><td>Tabel pemain lokal</td></tr>
+<tr><td><code>getPlayer(idOrName)</code></td><td>Tabel pemain, atau <code>nil</code></td></tr>
+<tr><td><code>getPlayers()</code></td><td>Semua pemain di world</td></tr>
+<tr><td><code>getPlayerCount()</code></td><td>Jumlahnya</td></tr>
+<tr><td><code>findPlayer(nama)</code></td><td>Tabel pemain, atau <code>nil</code></td></tr>
+<tr><td><code>itemName(id)</code></td><td>Nama item, atau <code>item#&lt;id&gt;</code></td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>Field pemain:</strong> <code>id</code>, <code>netid</code>, <code>name</code>, <code>country</code>,
+<code>userid</code>, <code>x</code>, <code>y</code>, <code>posx</code>, <code>posy</code> (sama dengan
+<code>x</code>/<code>y</code> — model menyimpan tile), <code>direction</code>, <code>isLocalPlayer</code>.
+<code>altName</code> selalu string kosong (tidak ada di wire). <code>state</code> dan <code>local</code>
+ada pada pemain dari <code>getLocal</code>/<code>getPlayer</code>/<code>getPlayers</code>/<code>findPlayer</code>.</p>
+
+<h3 id="inventory">5.5 Inventory</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Fungsi</th><th>Hasil</th></tr></thead>
+<tbody>
+<tr><td><code>getInventory()</code></td><td>Handle inventory, atau <code>nil</code></td></tr>
+<tr><td><code>getItem(id)</code></td><td><code>{ id, name, category, slot, count }</code>, atau <code>nil</code></td></tr>
+<tr><td><code>getItemCount(id)</code></td><td>Total count untuk sebuah id item</td></tr>
+<tr><td><code>getItems()</code></td><td>Array <code>{ slot, id, name }</code> untuk slot terisi</td></tr>
+<tr><td><code>selectItem(id)</code></td><td>Taruh item ke slot aktif</td></tr>
+<tr><td><code>searchItems(query)</code></td><td>Sampai 64 id item yang namanya cocok</td></tr>
+<tr><td><code>getInfo(idOrName)</code></td><td>Record item, atau <code>nil</code></td></tr>
+<tr><td><code>getInfos()</code></td><td>Semua record item yang dikenal</td></tr>
+</tbody>
+</table>
+</div>
+<div class="note warn"><b>Id item adalah number, bukan nama.</b> <code>getItem</code> dan
+<code>getItemCount</code> menerima id.</div>
+<p>Handle inventory: <code>used()</code>, <code>free()</code>, <code>getItem(id)</code>,
+<code>getItems()</code>, <code>getItemCount(id)</code>, <code>findItem(id)</code>,
+<code>canCollect(id)</code>; field <code>itemcount</code>, <code>slotcount</code>, <code>version</code>,
+<code>items</code>. <code>getItemCount</code> menjumlah lintas slot, jadi item yang terpecah dua slot
+dilaporkan sebagai total gabungan.</p>
+
+<h3 id="packet">5.6 Packet</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Fungsi</th><th>Hasil</th></tr></thead>
+<tbody>
+<tr><td><code>sendPacket(netId, fields)</code></td><td>Kirim <code>fields</code> (tabel key → value) sebagai variant list pada frame <code>netId</code>. <code>(ok)</code> atau <code>(false, error)</code></td></tr>
+<tr><td><code>sendAction(kind, x, y [, itemId])</code></td><td><code>kind</code> = <code>punch</code>, <code>place</code>, <code>walk</code>, atau <code>drop</code>. <code>itemId</code> opsional (default <code>0</code>)</td></tr>
+<tr><td><code>packetStats()</code></td><td><code>(packetsSent, packetsReceived)</code></td></tr>
+<tr><td><code>packetNames()</code></td><td>Array <code>{ id, name }</code> untuk setiap net id yang dikenal</td></tr>
+</tbody>
+</table>
+</div>
+<p>Perhatikan arti argumen per <code>kind</code>: untuk <code>walk</code>, <code>x</code>/<code>y</code>
+adalah tile tujuan; untuk <code>drop</code>, <code>itemId</code> adalah item yang dibuang dan
+<code>x</code>/<code>y</code> tidak dipakai; untuk <code>punch</code>/<code>place</code>,
+<code>x</code>/<code>y</code> adalah tile target.</p>
+<p>Net id dan nama CallFunction adalah bagian protokol wire. <strong>Jangan menebak</strong> —
+baca daftarnya dari <code>packetNames()</code>.</p>
+
+<h3 id="kelas">5.7 Kelas protokol</h3>
+<ul>
+  <li><code>Vector2.new(x, y)</code>, <code>Vector3.new(x, y, z)</code></li>
+  <li><code>variant(...)</code> dengan <code>set</code>/<code>reset</code>/<code>getType</code>/<code>getString</code>/<code>getInt</code>/<code>getFloat</code>/<code>getVector2</code>/<code>getVector3</code>/<code>print</code>/<code>toString</code></li>
+  <li><code>variantlist(...)</code> dengan <code>get</code>/<code>append</code>/<code>print</code></li>
+  <li><code>GameUpdatePacket.new()</code> — tabel packet mutable yang diterima <code>bot:sendRaw</code></li>
+  <li><code>RTVAR</code> — <code>new([str])</code>, <code>params</code>, <code>append</code>, <code>contains</code>, <code>size</code>, <code>get</code>, <code>getInt</code>/<code>getLong</code>, <code>erase</code>, <code>dump</code>, <code>parse</code></li>
+</ul>
+
+<h3 id="http-file">5.8 HTTP &amp; file</h3>
+<div class="tw">
+<table>
+<thead><tr><th>Fungsi</th><th>Hasil</th></tr></thead>
+<tbody>
+<tr><td><code>http.get(url)</code></td><td><code>(ok, statusCode, body)</code></td></tr>
+<tr><td><code>http.post(url, body [, contentType])</code></td><td><code>(ok, statusCode, body)</code></td></tr>
+<tr><td><code>file.read(path)</code></td><td>Isi file, atau <code>nil, error</code></td></tr>
+<tr><td><code>file.write(path, contents)</code></td><td><code>true</code>, atau <code>false, error</code></td></tr>
+</tbody>
+</table>
+</div>
+<p>Dua batas yang penting dan jujur:</p>
+<ul>
+  <li><code>file.read</code> / <code>file.write</code> <strong>terkunci di dalam script root</strong>
+      (<code>scripts/</code>). Path apa pun yang keluar dari folder itu ditolak
+      (<code>path escapes the script directory</code>).</li>
+  <li><code>http.get</code> / <code>http.post</code> bersifat <em>fire and forget</em>: request diserahkan
+      ke task pool, dan yang dikembalikan hanyalah hasil <strong>pengiriman</strong>.
+      <code>statusCode</code> masih <code>0</code> dan <code>body</code> masih <code>""</code> —
+      respons server belum disalurkan ke script. Jangan bangun logika di atas body-nya.</li>
+</ul>
+
+<hr>
+
+<h2 id="contoh">6. Contoh siap pakai</h2>
+
+<h3>6.1 Auto-reconnect</h3>
+<pre><code class="lua">local bot = getBot()
+if not bot then
+    log("error", "script ini tidak punya bot")
+    return
+end
+
+while true do
+    sleep(200)
+    if bot.status ~= "online" then
+        log("warn", "status " .. bot.status .. " — coba connect")
+        bot:connect()
+        sleep(5000)   -- beri waktu login; login gate tetap mengatur
+    end
+end</code></pre>
+
+<h3>6.2 Farm sederhana (petik + buang hasil)</h3>
+<pre><code class="lua">local bot = getBot()
+if not bot then return end
+
+-- Id item stabil di items.dat; beri nama di atas supaya mudah diganti.
+local DIRT  = 16
+local CHEST = 415
+
+local SIDE    = 4     -- tile per sisi
+local HARVEST = 100   -- ms antar pukulan
+local SETTLE  = 150   -- ms jeda setelah pukul
+
+local function step(dx, dy)
+    -- walkTo memakai pathfinding; teleport jauh ditolak server.
+    bot:walkTo(bot:x() + dx, bot:y() + dy)
+    sleep(HARVEST)
+end
+
+for pass = 1, 2 do
+    local dir = pass == 1 and 1 or -1
+    for _ = 1, SIDE do
+        step(dir, 0)
+        bot:punch(bot:x(), bot:y())   -- berdiri di atasnya = drop terambil
+        sleep(SETTLE)
+    end
+    for _ = 1, SIDE do
+        step(0, dir)
+        bot:punch(bot:x(), bot:y())
+        sleep(SETTLE)
+    end
+end
+
+if getItemCount(CHEST) &gt; 0 then
+    bot:drop(CHEST)
+    log("info", "hasil dibuang ke chest")
+end</code></pre>
+
+<h3>6.3 Bereaksi ke dunia (event, tanpa polling)</h3>
+<pre><code class="lua">local bot = getBot()
+if not bot then return end
+
+function onWorldJoin(world)
+    log("info", "masuk " .. world.name .. " (" .. world.width .. "x" .. world.height .. ")")
+end
+
+function onChat(player, message)
+    log("info", "&lt;" .. player.name .. "&gt; " .. message)
+end
+
+function onDisconnect(event)
+    log("warn", "terputus: " .. tostring(event.reason))
+end
+
+local seen = 0
+listen("packet", function(event)
+    seen = seen + 1
+    lastKind = event.type_name
+end)
+
+-- Body utama harus tetap hidup, kalau tidak handler ikut hilang.
+while true do
+    sleep(5000)
+    if seen &gt; 0 then
+        log("info", "packet: " .. seen .. " (terakhir " .. tostring(lastKind) .. ")")
+        seen = 0
+    end
+end</code></pre>
+
+<h3>6.4 Rotasi world</h3>
+<pre><code class="lua">local WORLDS   = { "FARM", "BLAZE", "PENJORY" }
+local DWELL_MS = 30000   -- lama tinggal sebelum pindah
+
+local bot = getBot()
+if not bot then return end
+
+local index = 0
+while true do
+    index = index % #WORLDS + 1
+    local target = WORLDS[index]
+    log("info", "warp ke " .. target)
+
+    -- join hanya mengirim request; world datang beberapa saat kemudian,
+    -- jadi sleep di bawah satu-satunya jaminan urutan.
+    bot:join(target)
+    sleep(DWELL_MS)
+end</code></pre>
+
+<h3>6.5 Importer token massal</h3>
+<pre><code class="lua">local TOKENS = {
+    { name = "worker1", token = "token|mac|rid" },
+    { name = "worker2", token = "token|mac|rid" },
+}
+
+for _, entry in ipairs(TOKENS) do
+    local bot = addBot(entry)
+    if bot then
+        log("info", "menambah " .. bot.name)
+        bot:connect()
+        sleep(8000)   -- login gate yang mengatur; beri napas
+    end
+end</code></pre>
+
+<h3>6.6 Timer</h3>
+<pre><code class="lua">local handle = every(60000, function()
+    log("info", "satu menit berlalu")
+end)
+
+-- Nanti, kalau mau berhenti:
+-- stopTimer(handle)</code></pre>
+
+<hr>
+
+<h2 id="sandbox">7. Sandbox &amp; batas</h2>
+<p>Setiap state dibuat dengan membuang bagian standard library yang tidak ada urusannya dengan script bot:</p>
+<pre><code>io  os  package  loadfile  dofile  load  loadstring  require  collectgarbage
+debug  rawequal  rawget  rawset  rawlen  setmetatable  getmetatable  module
+string.dump  next</code></pre>
+<p><code>coroutine</code> tetap ada. <code>print</code> dan <code>log</code> selalu tersedia.
+<strong>Tidak ada tabel <code>console</code></strong> — <code>console.log</code> tidak ada, pakai
+<code>log</code>/<code>print</code>.</p>
+<p>Memori dibatasi allocator kustom: default <strong>64 MB</strong>, diatur di kode
+(<code>LuaRuntime.hpp</code>), bukan config key. Penolakan diterjemahkan Lua menjadi error out-of-memory.</p>
+<div class="tw">
+<table>
+<thead><tr><th>Hal</th><th>Batas</th></tr></thead>
+<tbody>
+<tr><td><code>file.read</code> / <code>file.write</code></td><td>Path harus tetap di bawah script root</td></tr>
+<tr><td><code>http.get</code> / <code>http.post</code></td><td>Hanya hasil submit yang dikembalikan; respons tidak sampai ke script</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="noop">8. Yang sengaja no-op (jujur)</h2>
+<p>Mesin tidak memalsukan fitur yang tidak dimilikinya:</p>
+<ul>
+  <li><code>bot:getSignal()</code> dan <code>bot:getCaptcha()</code> mengembalikan <code>nil</code>.</li>
+  <li><code>bot:runScript(content)</code> mengembalikan <code>false</code> + alasan: satu body kooperatif
+      per script, jadi pakai script terpisah.</li>
+  <li><code>bot:stopScript()</code> tidak melakukan apa-apa; script berhenti sendiri saat <code>return</code>.</li>
+  <li><code>bot:getLogin()</code> melaporkan <code>mac</code>/<code>rid</code> kosong.</li>
+  <li><code>bot:setMac</code>, <code>bot:setRid</code>, <code>bot:updateBot</code>,
+      <code>bot:setCountry</code> mengembalikan <code>true</code> tanpa mengubah apa pun.
+      <code>bot:setSkin(1..6)</code> divalidasi lalu diterima untuk reconnect berikutnya (skin sampai ke
+      server lewat identitas login, bukan lewat packet).</li>
+  <li><code>runThread</code> memanggil callback secara inline; tidak ada thread kedua.</li>
+  <li><code>world:hasAdventure()</code> selalu <code>false</code>; <code>world:getAdventures()</code> kosong.</li>
+  <li><code>bot.level</code> selalu <code>nil</code>.</li>
+  <li><code>listenEvents(secs)</code> adalah no-op yang mengembalikan ms (listener memang mengirim
+      setiap frame).</li>
+</ul>
+
+<h2 id="error">9. Error</h2>
+<p>Error script dilaporkan ke console dan log, lalu script <strong>dihentikan</strong>, bukan dibiarkan rusak.
+Kode error:</p>
+<pre><code>LUA_RUNTIME_ERROR      LUA_SCRIPT_NOT_FOUND   LUA_SCRIPT_EXISTS
+LUA_SYNTAX_ERROR       LUA_TIMEOUT            LUA_SANDBOX_VIOLATION
+LUA_MODULE_ERROR       LUA_SCRIPT_NOT_RUNNING</code></pre>
+<p>Status aksi bot (dari <code>(ok, err)</code>) juga string mesin yang stabil, mis.
+<code>BOT_ACTION_RATE_LIMITED</code>, <code>BOT_ALREADY_IN_WORLD</code>, <code>BOT_NOT_FOUND</code>,
+<code>BOT_NO_WORLD</code>, <code>ITEM_NOT_FOUND</code>, <code>PLAYER_NOT_FOUND</code>,
+<code>INVALID_ARGUMENT</code>.</p>
+<div class="note ok"><b><code>BOT_ACTION_RATE_LIMITED</code> bukan kegagalan.</b> Artinya aksi ditolak pacer
+sebelum dikirim (tidak ada yang setengah jalan). Diam sebentar, lalu coba lagi.</div>
+
+<h2 id="config">10. Config keys</h2>
+<div class="tw">
+<table>
+<thead><tr><th>Key</th><th>Default</th><th>Efek</th></tr></thead>
+<tbody>
+<tr><td><code>scripts.instruction_budget</code></td><td><code>2000000</code></td><td>Instruksi per resume; <code>0</code> mematikan hook</td></tr>
+<tr><td><code>scripts.script_root</code></td><td><code>scripts</code></td><td>Root yang membatasi <code>file.read</code>/<code>file.write</code></td></tr>
+</tbody>
+</table>
+</div>
+<p>Key berikut <strong>dibaca tapi belum mengubah apa pun</strong>: <code>scripts.autorun</code>,
+<code>scripts.allow_file_io</code>, <code>scripts.allow_http</code>, <code>scripts.allow_console</code>.
+Jangan mengandalkan namanya — tulis script yang membuktikan behavior-nya.</p>
+
+<h2 id="tips">11. Tips &amp; jebakan</h2>
+<ul>
+  <li><strong>Selalu periksa <code>(ok, err)</code></strong> untuk aksi yang mengirim paket.</li>
+  <li><strong>Jangan <code>sleep()</code> di dalam callback.</strong> Tidak ada coroutine untuk di-yield.</li>
+  <li><strong>Jaga body utama tetap hidup</strong> kalau memakai handler
+      (<code>while true do sleep(...) end</code>), kalau tidak script dianggap selesai dan handler mati.</li>
+  <li><strong><code>tile_change</code> dan <code>packet</code> sangat ramai</strong> (ribuan per menit saat
+      farm) — hitung, jangan log per kejadian.</li>
+  <li><strong>Id item adalah number.</strong> Beri nama lewat <code>local DIRT = 16</code> di atas file.</li>
+  <li><strong>Pacing adalah teman.</strong> Biarkan <code>sleep()</code> tetap ada.</li>
+  <li><strong><code>join</code> sekarang lewat <code>warp</code></strong>, sehingga kena cek state, cek
+      &ldquo;sudah di world itu&rdquo;, dan Warp pacer. Loop <code>join()</code> tanpa jeda tidak akan
+      bekerja seperti dulu.</li>
+  <li><strong>Warp membatalkan automation</strong>: task yang menyimpan daftar tile/posisi pemain dari world
+      lama tidak lagi valid setelah pindah world.</li>
+</ul>
+
+<footer>
+  <p>Panduan Lua API Sylphie · versi Markdown dari halaman ini:
+  <a href="https://github.com/arvcx/Sylphielette/blob/main/scripting.md">scripting.md</a>
+  (atau <a href="scripting.md">file lokal</a>). Referensi teknis internal ada di
+  <code>docs/scripting.md</code>, <code>docs/protocol.md</code>, dan
+  <code>docs/packet-capture.md</code>.</p>
+</footer>
+
+</main>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- Lua syntax highlighting ---------- */
+  var KEYWORDS = "and|break|do|else|elseif|end|false|for|function|goto|if|in|local|nil|not|or|repeat|return|then|true|until|while";
+  var TOKEN = new RegExp(
+    "(--\\[\\[[\\s\\S]*?\\]\\]|--[^\\n]*|\\[\\[[\\s\\S]*?\\]\\]|\"(?:\\\\.|[^\"\\\\\\n])*\"|'(?:\\\\.|[^'\\\\\\n])*'|\\b(?:" +
+      KEYWORDS +
+      ")\\b|\\b\\d+(?:\\.\\d+)?\\b)",
+    "g"
+  );
+
+  function span(cls, text) {
+    return '<span class="' + cls + '">' + text + "</span>";
+  }
+
+  function highlight(code) {
+    return code.replace(TOKEN, function (match) {
+      if (match.slice(0, 2) === "--") return span("c", match);
+      var head = match.charAt(0);
+      if (head === '"' || head === "'" || match.slice(0, 2) === "[[") return span("s", match);
+      if (head >= "0" && head <= "9") return span("n", match);
+      return span("k", match);
+    });
+  }
+
+  var blocks = document.querySelectorAll("pre > code.lua");
+  Array.prototype.forEach.call(blocks, function (block) {
+    block.innerHTML = highlight(block.textContent);
+  });
+
+  /* ---------- copy buttons ---------- */
+  Array.prototype.forEach.call(document.querySelectorAll("pre"), function (pre) {
+    var button = document.createElement("button");
+    button.className = "copy";
+    button.type = "button";
+    button.textContent = "copy";
+    button.addEventListener("click", function () {
+      var code = pre.querySelector("code");
+      var text = code ? code.textContent : pre.textContent;
+      var done = function () {
+        button.textContent = "copied";
+        button.classList.add("done");
+        window.setTimeout(function () {
+          button.textContent = "copy";
+          button.classList.remove("done");
+        }, 1400);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, function () {
+          fallback(text, done);
+        });
+      } else {
+        fallback(text, done);
+      }
+    });
+    pre.appendChild(button);
+  });
+
+  function fallback(text, done) {
+    var area = document.createElement("textarea");
+    area.value = text;
+    area.setAttribute("readonly", "");
+    area.style.position = "fixed";
+    area.style.opacity = "0";
+    document.body.appendChild(area);
+    area.select();
+    try {
+      document.execCommand("copy");
+      done();
+    } catch (error) {
+      /* clipboard unavailable: nothing useful to do */
+    }
+    document.body.removeChild(area);
+  }
+
+  /* ---------- scroll-spy for the nav ---------- */
+  var links = Array.prototype.slice.call(document.querySelectorAll("#nav a"));
+  var targets = links
+    .map(function (link) {
+      var id = link.getAttribute("href").slice(1);
+      var node = document.getElementById(id);
+      return node ? { link: link, node: node } : null;
+    })
+    .filter(Boolean);
+
+  function setActive(link) {
+    links.forEach(function (item) {
+      item.classList.toggle("active", item === link);
+    });
+  }
+
+  if ("IntersectionObserver" in window && targets.length) {
+    var observer = new IntersectionObserver(
+      function (entries) {
+        var visible = entries
+          .filter(function (entry) {
+            return entry.isIntersecting;
+          })
+          .sort(function (a, b) {
+            return a.boundingClientRect.top - b.boundingClientRect.top;
+          });
+        if (!visible.length) return;
+        var match = targets.filter(function (item) {
+          return item.node === visible[0].target;
+        })[0];
+        if (match) setActive(match.link);
+      },
+      { rootMargin: "-72px 0px -70% 0px", threshold: 0 }
+    );
+    targets.forEach(function (item) {
+      observer.observe(item.node);
+    });
+  }
+
+  /* ---------- section filter ---------- */
+  var filter = document.getElementById("filter");
+  if (filter) {
+    filter.addEventListener("input", function () {
+      var query = filter.value.trim().toLowerCase();
+      links.forEach(function (link) {
+        var id = link.getAttribute("href").slice(1);
+        var node = document.getElementById(id);
+        var haystack = (link.textContent + " " + (node ? node.textContent : "")).toLowerCase();
+        link.style.display = !query || haystack.indexOf(query) !== -1 ? "" : "none";
+      });
+    });
+  }
+})();
+</script>
+</body>
+</html>
